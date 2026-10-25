@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg text-textMain h-screen w-screen overflow-hidden;
+  }
+}
+
+/* Custom React Flow overrides for our dark theme */
+.react-flow__background {
+  background-color: theme('colors.bg') !important;
+}
+.react-flow__minimap {
+  background-color: theme('colors.panel') !important;
+  border: 1px solid theme('colors.border');
+  border-radius: 8px;
+}
+.react-flow__controls {
+  box-shadow: none !important;
+  border: 1px solid theme('colors.border');
+  border-radius: 8px;
+  overflow: hidden;
+}
+.react-flow__controls-button {
+  background-color: theme('colors.panel') !important;
+  border-bottom: 1px solid theme('colors.border') !important;
+  fill: theme('colors.textMuted') !important;
+}
+.react-flow__controls-button:hover {
+  background-color: theme('colors.border') !important;
+}
+.react-flow__edge-path {
+  stroke: theme('colors.border') !important;
+  stroke-width: 2 !important;
+}
+.react-flow__handle {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.react-flow__node:hover .react-flow__handle {
+  opacity: 1;
+}
