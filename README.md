@@ -14,7 +14,7 @@ A web app for mapping out learning paths as interactive skill trees. Built with 
 
 ## Live Demo
 
-https://skill-tree-builder-sand.vercel.app/
+https://skill-tree-builder.amulose.vercel.app/
 
 ## Local Setup
 
