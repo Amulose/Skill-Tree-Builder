@@ -9,7 +9,7 @@ import { SkillTree, SkillNode as SkillNodeType } from '../types';
 import { loadTrees, saveTrees } from '../storage';
 import { wouldCreateCycle, getAutoLayout } from '../lib/graph';
 import SkillNode from '../components/SkillNode';
-import { ArrowLeft, Save, Plus, Trash2, Wand2, Settings, X } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Wand2, Settings, X, Link as LinkIcon } from 'lucide-react';
 
 function EditorCanvas() {
   const { id } = useParams();
@@ -24,6 +24,9 @@ function EditorCanvas() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
+  // State for adding a new resource
+  const [newResource, setNewResource] = useState('');
+
   useEffect(() => {
     const trees = loadTrees();
     const found = trees.find(t => t.id === id);
@@ -32,7 +35,12 @@ function EditorCanvas() {
       setNodes(found.nodes.map(n => ({
         id: n.id,
         position: n.position,
-        data: { title: n.title, estTime: n.estTime, state: 'available' },
+        data: { 
+          title: n.title, 
+          estTime: n.estTime, 
+          state: 'available',
+          resources: n.resources || [] // Load resources into node data
+        },
         type: 'skillNode',
       })) as any);
       setEdges(found.edges.map(e => ({ id: e.id, source: e.source, target: e.target })));
@@ -61,7 +69,7 @@ function EditorCanvas() {
     const newNode = {
       id: newNodeId,
       position,
-      data: { title: 'New Skill', estTime: '1 week', state: 'available' },
+      data: { title: 'New Skill', estTime: '1 week', state: 'available', resources: [] },
       type: 'skillNode',
     };
 
@@ -83,7 +91,7 @@ function EditorCanvas() {
     setSelectedNodeId(null);
   };
 
-  const updateNodeData = (field: string, value: string) => {
+  const updateNodeData = (field: string, value: any) => {
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === selectedNodeId) {
@@ -97,20 +105,34 @@ function EditorCanvas() {
     );
   };
 
+  const addResource = () => {
+    if (!newResource.trim()) return;
+    const selectedNode = nodes.find(n => n.id === selectedNodeId);
+    const currentResources = selectedNode?.data.resources || [];
+    updateNodeData('resources', [...currentResources, newResource.trim()]);
+    setNewResource('');
+  };
+
+  const removeResource = (index: number) => {
+    const selectedNode = nodes.find(n => n.id === selectedNodeId);
+    const currentResources = selectedNode?.data.resources || [];
+    const updated = currentResources.filter((_: any, i: number) => i !== index);
+    updateNodeData('resources', updated);
+  };
+
   const saveAndExit = () => {
     if (!tree) return;
 
     const finalTitle = tree.title.trim() === '' ? 'Untitled Skill Tree' : tree.title;
 
     const updatedNodes: SkillNodeType[] = nodes.map(n => {
-      const existing = tree.nodes.find(tn => tn.id === n.id);
       return {
         id: n.id,
         title: n.data.title,
         estTime: n.data.estTime,
         position: n.position,
-        description: existing?.description || '',
-        resources: existing?.resources || [],
+        description: '', // We can add description editing later
+        resources: n.data.resources || [], // Save the resources!
       };
     });
 
@@ -147,7 +169,7 @@ function EditorCanvas() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
-          onNodeClick={(_, node) => setSelectedNodeId(node.id)}
+          onNodeClick={(_, node) => { setSelectedNodeId(node.id); setNewResource(''); }}
           onPaneClick={() => { setSelectedNodeId(null); setShowSettings(false); }}
           nodeTypes={{ skillNode: SkillNode }}
           fitView
@@ -263,7 +285,7 @@ function EditorCanvas() {
             </button>
           </div>
           
-          <div className="space-y-5">
+          <div className="space-y-5 flex-1 overflow-y-auto pr-1">
             <div>
               <label className="block text-xs font-bold text-textMuted mb-2 uppercase tracking-wider">Title</label>
               <input 
@@ -282,6 +304,47 @@ function EditorCanvas() {
                 onChange={(e) => updateNodeData('estTime', e.target.value)}
                 className="w-full bg-bg border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
               />
+            </div>
+
+            {/* RESOURCES SECTION */}
+            <div className="pt-4 border-t border-border/50">
+              <label className="block text-xs font-bold text-textMuted mb-2 uppercase tracking-wider flex items-center gap-2">
+                <LinkIcon size={12} /> Resources
+              </label>
+              
+              <div className="flex gap-2 mb-3">
+                <input 
+                  type="url" 
+                  value={newResource}
+                  onChange={(e) => setNewResource(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addResource()}
+                  placeholder="https://..."
+                  className="flex-1 bg-bg border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                />
+                <button 
+                  onClick={addResource}
+                  className="bg-accent/20 text-accent hover:bg-accent hover:text-white px-3 rounded-xl transition-all active:scale-95 flex items-center justify-center"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+
+              <ul className="space-y-2">
+                {(selectedNode.data.resources || []).map((url: string, i: number) => (
+                  <li key={i} className="flex items-center justify-between bg-bg border border-border/50 rounded-lg p-2 group">
+                    <span className="text-xs text-textMuted truncate flex-1 mr-2" title={url}>{url}</span>
+                    <button 
+                      onClick={() => removeResource(i)}
+                      className="text-textMuted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={14} />
+                    </button>
+                  </li>
+                ))}
+                {(!selectedNode.data.resources || selectedNode.data.resources.length === 0) && (
+                  <li className="text-xs text-textMuted italic text-center py-2">No resources added yet</li>
+                )}
+              </ul>
             </div>
           </div>
         </div>
