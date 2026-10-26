@@ -106,10 +106,7 @@ export default function Gallery() {
   );
 
   return (
-    <div className="h-full overflow-y-auto p-8 relative">
-      {/* Background ambient glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/5 blur-[120px] rounded-full pointer-events-none" />
-
+    <div className="h-full overflow-y-auto p-8 relative z-10">
       <div className="max-w-6xl mx-auto relative z-10">
         <div className="flex justify-between items-end mb-8 animate-slide-up">
           <div>
