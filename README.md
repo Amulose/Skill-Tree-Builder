@@ -23,7 +23,7 @@ https://skill-tree-builder.amulose.vercel.app/
 
 ## Local Setup
 
-```bash
+bash
 npm install
 npm run dev
 
@@ -65,4 +65,3 @@ Open `http://localhost:5173` in your browser
 - No way to export or import tree data as JSON files yet
 - No backend so progress cannot sync across devices
 - The editor does not have undo or redo
-```
