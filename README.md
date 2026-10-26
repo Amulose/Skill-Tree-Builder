@@ -1,4 +1,3 @@
-```markdown
 # SKILL TREE BUILDER
 
 A web app for mapping out learning paths as interactive skill trees. Built with React, Vite, TypeScript, React Flow, and Tailwind CSS. No backend, no authentication, no external database. Your data stays in your browser via local storage
@@ -27,7 +26,6 @@ https://skill-tree-builder.amulose.vercel.app/
 ```bash
 npm install
 npm run dev
-```
 
 Open `http://localhost:5173` in your browser
 
