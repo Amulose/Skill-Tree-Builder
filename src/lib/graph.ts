@@ -1,10 +1,11 @@
 import { SkillTree, NodeState } from '../types';
+import dagre from '@dagrejs/dagre';
 
 // Checks if adding an edge (source -> target) would create a cycle
 export function wouldCreateCycle(
   sourceId: string,
   targetId: string,
-  edges: any[] // Changed to any[] to avoid strict type clashes with React Flow
+  edges: any[]
 ): boolean {
   if (sourceId === targetId) return true;
 
@@ -54,6 +55,34 @@ export function getNodeStates(tree: SkillTree, completedNodeIds: string[]): Reco
   });
 
   return states;
+}
+
+// Auto-layout function for the Tidy Up button
+export function getAutoLayout(nodes: any[], edges: any[]) {
+  const g = new dagre.graphlib.Graph();
+  g.setGraph({ rankdir: 'TB', nodesep: 50, ranksep: 80 });
+  g.setDefaultEdgeLabel(() => ({}));
+
+  nodes.forEach((node) => {
+    g.setNode(node.id, { width: 192, height: 80 });
+  });
+
+  edges.forEach((edge) => {
+    g.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(g);
+
+  return nodes.map((node) => {
+    const pos = g.node(node.id);
+    return {
+      ...node,
+      position: {
+        x: pos.x - 96, 
+        y: pos.y - 40, 
+      },
+    };
+  });
 }
 
 export function calculateLayout(tree: SkillTree): Record<string, { x: number, y: number }> {

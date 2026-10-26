@@ -7,14 +7,14 @@ import {
 import '@xyflow/react/dist/style.css';
 import { SkillTree, SkillNode as SkillNodeType } from '../types';
 import { loadTrees, saveTrees } from '../storage';
-import { wouldCreateCycle } from '../lib/graph';
+import { wouldCreateCycle, getAutoLayout } from '../lib/graph';
 import SkillNode from '../components/SkillNode';
-import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Wand2, Settings, X } from 'lucide-react';
 
 function EditorCanvas() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
   
   const [tree, setTree] = useState<SkillTree | null>(null);
   
@@ -22,6 +22,7 @@ function EditorCanvas() {
   const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
   
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const trees = loadTrees();
@@ -68,6 +69,12 @@ function EditorCanvas() {
     setSelectedNodeId(newNodeId);
   };
 
+  const handleTidyUp = () => {
+    const layoutedNodes = getAutoLayout(nodes, edges);
+    setNodes(layoutedNodes);
+    setTimeout(() => fitView({ duration: 800 }), 50); 
+  };
+
   const deleteNode = (nodeId: string) => {
     if (!confirm('Delete this node and all its connections?')) return;
     
@@ -93,7 +100,6 @@ function EditorCanvas() {
   const saveAndExit = () => {
     if (!tree) return;
 
-    // Make sure we don't save an empty title
     const finalTitle = tree.title.trim() === '' ? 'Untitled Skill Tree' : tree.title;
 
     const updatedNodes: SkillNodeType[] = nodes.map(n => {
@@ -142,90 +148,139 @@ function EditorCanvas() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={(_, node) => setSelectedNodeId(node.id)}
-          onPaneClick={() => setSelectedNodeId(null)}
+          onPaneClick={() => { setSelectedNodeId(null); setShowSettings(false); }}
           nodeTypes={{ skillNode: SkillNode }}
           fitView
           className="bg-bg"
           proOptions={{ hideAttribution: true }}
         >
-          <Background color="#2A2A2A" gap={24} size={2} />
+          <Background color="#27272A" gap={32} size={1.5} />
           <Controls />
         </ReactFlow>
 
         {/* FLOATING HEADER */}
-        <div className="absolute top-4 left-4 z-10 flex gap-4">
-          <Link to={`/tree/${tree.id}`} className="bg-panel border border-border p-2 rounded-lg hover:border-textMuted transition-colors">
+        <div className="absolute top-4 left-4 right-4 md:right-auto z-10 flex flex-wrap gap-3 animate-fade-in">
+          <Link to={`/tree/${tree.id}`} className="bg-panel/80 backdrop-blur-md border border-border p-2.5 h-fit rounded-xl hover:border-textMuted hover:bg-panel transition-all shadow-lg active:scale-95">
             <ArrowLeft size={20} />
           </Link>
-          <div className="bg-panel border border-border px-6 py-2 rounded-lg flex items-center gap-4">
+          
+          <div className="bg-panel/80 backdrop-blur-md border border-border px-4 py-2 rounded-xl flex items-center gap-3 shadow-lg">
+            <input
+              type="text"
+              value={tree.title}
+              onChange={(e) => setTree({ ...tree, title: e.target.value })}
+              className="bg-transparent border-none outline-none font-bold text-lg focus:ring-0 p-0 w-32 md:w-64 text-textMain placeholder-textMuted"
+              placeholder="Tree Name..."
+            />
+            <span className="text-accent text-xs font-bold tracking-wider uppercase hidden md:block bg-accent/10 px-2 py-1 rounded">Editing</span>
             
-            {/* EDITABLE TREE TITLE */}
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={tree.title}
-                onChange={(e) => setTree({ ...tree, title: e.target.value })}
-                className="bg-transparent border-none outline-none font-bold text-lg focus:ring-0 p-0 w-64 text-textMain placeholder-textMuted"
-                placeholder="Tree Name..."
-              />
-              <span className="text-accent text-sm font-medium">(Editing)</span>
-            </div>
-
-            <div className="w-px h-8 bg-border mx-2"></div>
+            <button 
+              onClick={() => setShowSettings(!showSettings)} 
+              className={`p-2 rounded-lg transition-all active:scale-95 ${showSettings ? 'text-accent bg-accent/20' : 'text-textMuted hover:text-textMain hover:bg-border/50'}`}
+              title="Tree Settings"
+            >
+              <Settings size={18} />
+            </button>
+            <div className="w-px h-6 bg-border"></div>
             <button 
               onClick={saveAndExit}
-              className="text-success hover:text-success/80 flex items-center gap-2 text-sm font-bold transition-colors"
+              className="text-success hover:text-white bg-success/10 hover:bg-success px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-bold transition-all active:scale-95"
             >
-              <Save size={16} /> Save & View
+              <Save size={16} /> <span className="hidden md:inline">Save</span>
             </button>
           </div>
         </div>
 
-        <button
-          onClick={addNode}
-          className="absolute bottom-6 right-6 z-10 bg-accent hover:bg-accentHover text-white p-4 rounded-full shadow-lg transition-colors"
-          title="Add new skill node"
-        >
-          <Plus size={24} />
-        </button>
-        
-        <div className="absolute bottom-6 left-6 z-10 bg-panel/80 backdrop-blur border border-border px-4 py-2 rounded-lg text-xs text-textMuted">
-          Drag from the dot on the bottom of a node to the top of another to connect them.
+        {/* FLOATING BOTTOM BUTTONS */}
+        <div className="absolute bottom-6 right-6 z-10 flex flex-col gap-4 animate-fade-in">
+          <button
+            onClick={handleTidyUp}
+            className="bg-panel/80 backdrop-blur-md border border-border hover:border-accent text-textMain p-4 rounded-full shadow-lg hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all duration-300 active:scale-95 hover:scale-105"
+            title="Auto-arrange nodes"
+          >
+            <Wand2 size={24} className="text-accent" />
+          </button>
+          <button
+            onClick={addNode}
+            className="bg-accent hover:bg-accentHover text-white p-4 rounded-full shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:shadow-[0_0_30px_rgba(99,102,241,0.6)] transition-all duration-300 active:scale-95 hover:scale-105"
+            title="Add new skill node"
+          >
+            <Plus size={24} />
+          </button>
         </div>
+        
+        {!selectedNode && !showSettings && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 bg-panel/80 backdrop-blur-md border border-border px-4 py-2 rounded-full text-xs font-medium text-textMuted hidden md:block transition-all animate-fade-in shadow-lg">
+            Drag from the bottom dot of a node to the top of another to connect them
+          </div>
+        )}
       </div>
 
-      {/* EDIT NODE SIDEBAR */}
-      {selectedNode && (
-        <div className="w-80 border-l border-border bg-panel p-6 flex flex-col absolute right-0 top-0 bottom-0 z-20 shadow-2xl">
+      {/* TREE SETTINGS SIDEBAR */}
+      {showSettings && (
+        <div className="w-full md:w-80 border-l border-border bg-panel/95 backdrop-blur-xl p-6 flex flex-col absolute bottom-0 left-0 right-0 h-[50vh] md:top-0 md:h-full z-20 shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-right duration-300">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold">Edit Node</h2>
+            <h2 className="text-xl font-bold tracking-tight">Tree Settings</h2>
+            <button onClick={() => setShowSettings(false)} className="text-textMuted hover:text-textMain p-1 bg-border/50 hover:bg-border rounded-lg transition-colors">
+              <X size={18} />
+            </button>
+          </div>
+          
+          <div className="space-y-5">
+            <div>
+              <label className="block text-xs font-bold text-textMuted mb-2 uppercase tracking-wider">Category</label>
+              <input 
+                type="text" 
+                value={tree.category}
+                onChange={(e) => setTree({ ...tree, category: e.target.value })}
+                className="w-full bg-bg border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-textMuted mb-2 uppercase tracking-wider">Description</label>
+              <textarea 
+                rows={4}
+                value={tree.description}
+                onChange={(e) => setTree({ ...tree, description: e.target.value })}
+                className="w-full bg-bg border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent resize-none transition-all leading-relaxed"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT NODE SIDEBAR */}
+      {selectedNode && !showSettings && (
+        <div className="w-full md:w-80 border-l border-border bg-panel/95 backdrop-blur-xl p-6 flex flex-col absolute bottom-0 left-0 right-0 h-[50vh] md:top-0 md:h-full z-20 shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-right duration-300">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold tracking-tight">Edit Node</h2>
             <button 
               onClick={() => deleteNode(selectedNode.id)}
-              className="text-red-500 hover:text-red-400 p-2 rounded hover:bg-red-500/10 transition-colors"
+              className="text-red-500 hover:text-white hover:bg-red-500 p-2 rounded-lg transition-colors"
               title="Delete Node"
             >
               <Trash2 size={18} />
             </button>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Title</label>
+              <label className="block text-xs font-bold text-textMuted mb-2 uppercase tracking-wider">Title</label>
               <input 
                 type="text" 
                 value={selectedNode.data.title}
                 onChange={(e) => updateNodeData('title', e.target.value)}
-                className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent"
+                className="w-full bg-bg border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all font-medium"
               />
             </div>
             
             <div>
-              <label className="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Estimated Time</label>
+              <label className="block text-xs font-bold text-textMuted mb-2 uppercase tracking-wider">Estimated Time</label>
               <input 
                 type="text" 
                 value={selectedNode.data.estTime}
                 onChange={(e) => updateNodeData('estTime', e.target.value)}
-                className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent"
+                className="w-full bg-bg border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
               />
             </div>
           </div>

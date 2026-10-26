@@ -5,40 +5,54 @@
 @layer base {
   body {
     @apply bg-bg text-textMain h-screen w-screen overflow-hidden;
+    background-image: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
   }
 }
 
 /* Custom React Flow overrides for our dark theme */
 .react-flow__background {
-  background-color: theme('colors.bg') !important;
+  background-color: transparent !important;
 }
 .react-flow__minimap {
   background-color: theme('colors.panel') !important;
   border: 1px solid theme('colors.border');
-  border-radius: 8px;
-}
-.react-flow__controls {
-  box-shadow: none !important;
-  border: 1px solid theme('colors.border');
-  border-radius: 8px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
   overflow: hidden;
 }
-.react-flow__controls-button {
+.react-flow__controls {
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5) !important;
+  border: 1px solid theme('colors.border');
+  border-radius: 12px;
+  overflow: hidden;
   background-color: theme('colors.panel') !important;
+}
+.react-flow__controls-button {
+  background-color: transparent !important;
   border-bottom: 1px solid theme('colors.border') !important;
   fill: theme('colors.textMuted') !important;
+  transition: all 0.2s;
 }
 .react-flow__controls-button:hover {
   background-color: theme('colors.border') !important;
+  fill: theme('colors.textMain') !important;
 }
 .react-flow__edge-path {
-  stroke: theme('colors.border') !important;
+  stroke: theme('colors.accent') !important;
   stroke-width: 2 !important;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+.react-flow__edge:hover .react-flow__edge-path {
+  opacity: 1;
+  stroke-width: 3 !important;
 }
 .react-flow__handle {
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.2s;
+  transform: scale(0.5);
 }
 .react-flow__node:hover .react-flow__handle {
   opacity: 1;
+  transform: scale(1);
 }
